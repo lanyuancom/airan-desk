@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=AiRan Desk
+GenericName=Remote Desktop
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/airan-desk --no-ui
+Icon=airan-desk
+Terminal=false
+Categories=Network;RemoteAccess;
+StartupNotify=false
+X-GNOME-Autostart-enabled=true

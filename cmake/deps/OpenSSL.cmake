@@ -1,0 +1,12 @@
+if(WIN32)
+    set(OPENSSL_USE_STATIC_LIBS OFF CACHE BOOL "" FORCE)
+    set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include" CACHE PATH "Path to OpenSSL include directory" FORCE)
+    set(OPENSSL_CRYPTO_LIBRARY "${OPENSSL_ROOT_DIR}/lib/libcrypto.lib" CACHE FILEPATH "Path to OpenSSL crypto library" FORCE)
+    set(OPENSSL_SSL_LIBRARY "${OPENSSL_ROOT_DIR}/lib/libssl.lib" CACHE FILEPATH "Path to OpenSSL SSL library" FORCE)
+    find_package(OpenSSL REQUIRED)
+
+    message(STATUS "[OpenSSL] Found version: ${OPENSSL_VERSION}")
+    message(STATUS "[OpenSSL] Include: ${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "[OpenSSL] SSL Library: ${OPENSSL_SSL_LIBRARY}")
+    message(STATUS "[OpenSSL] Crypto Library: ${OPENSSL_CRYPTO_LIBRARY}")
+endif()
