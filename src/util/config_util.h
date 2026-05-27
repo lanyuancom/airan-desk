@@ -57,6 +57,9 @@ public:
     int remote_height;
     QString audio_mic_device;
     QString audio_loopback_device;
+    /* 屏幕唤醒和睡眠管理 */
+    bool auto_wake_display;
+    bool prevent_sleep;
     spdlog::level::level_enum logLevel;
     QString logLevelStr;
 

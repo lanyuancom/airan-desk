@@ -3,6 +3,7 @@
 #include "../common/constant.h"
 #include "../util/json_util.h"
 #include "../util/qt_callback_util.h"
+#include "../util/screen_wake_util.h"
 
 #include <QDateTime>
 #include <QMetaObject>
@@ -34,6 +35,10 @@ void WebRtcCli::onInputChannelOpen()
     if (m_inputChannelRecoverTimer)
         QMetaObject::invokeMethod(m_inputChannelRecoverTimer, "stop", Qt::QueuedConnection);
     LOG_INFO("Input channel opened");
+    
+    ScreenWakeUtil->wakeDisplay();
+    ScreenWakeUtil->preventSleep(true);
+    
     QMetaObject::invokeMethod(this, "notifyCurrentStreamMode", Qt::QueuedConnection);
     QMetaObject::invokeMethod(this, "notifyDesktopState", Qt::QueuedConnection);
 }
@@ -79,6 +84,9 @@ void WebRtcCli::onVideoDataChannelOpen()
     m_pendingVideoKeyframe.reset();
     m_videoDataChannel->setBufferedAmountLowThreshold(512 * 1024);
     LOG_INFO("Reliable video data channel opened");
+    
+    ScreenWakeUtil->wakeDisplay();
+    ScreenWakeUtil->preventSleep(true);
 }
 
 void WebRtcCli::onVideoDataChannelBufferedAmountLow()

@@ -3,6 +3,7 @@
 #include "webrtc_cli.h"
 #include "terminal/terminal_session.h"
 #include "../util/file_packet_util.h"
+#include "../util/screen_wake_util.h"
 
 void WebRtcCli::destroy()
 {
@@ -211,6 +212,8 @@ void WebRtcCli::destroy()
     }
     /* 清理分包数据 */
     m_uploadFragments.clear();
+
+    ScreenWakeUtil->preventSleep(false);
 
     LOG_INFO("WebRtcCli destroyed");
 }

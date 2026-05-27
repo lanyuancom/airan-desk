@@ -64,6 +64,7 @@ set(SRC_FILES
     src/util/file_packet_util_send.cpp
     src/util/i18n_util.cpp
     src/util/input_util.cpp
+    src/util/screen_wake_util.cpp
     src/util/json_util.cpp
     src/webrtc/webrtc_cli_channels.cpp
     src/webrtc/webrtc_cli_audio.cpp
@@ -136,6 +137,7 @@ set(HDR_FILES
     src/util/file_packet_util.h
     src/util/i18n_util.h
     src/util/input_util.h
+    src/util/screen_wake_util.h
     src/util/json_util.h
     src/util/key_util.h
     src/webrtc/webrtc_cli.h

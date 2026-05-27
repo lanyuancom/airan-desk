@@ -245,6 +245,11 @@ void ConfigUtilData::saveCommonIni()
     m_commonIni->setValue("loopbackDevice", audio_loopback_device);
     m_commonIni->endGroup();
 
+    m_commonIni->beginGroup("screen_wake");
+    m_commonIni->setValue("autoWakeDisplay", auto_wake_display);
+    m_commonIni->setValue("preventSleep", prevent_sleep);
+    m_commonIni->endGroup();
+
     m_commonIni->sync();
 }
 
@@ -341,6 +346,11 @@ void ConfigUtilData::initCommonIni()
     m_commonIni->beginGroup("audio");
     audio_mic_device = m_commonIni->value("micDevice", "").toString().trimmed();
     audio_loopback_device = m_commonIni->value("loopbackDevice", "").toString().trimmed();
+    m_commonIni->endGroup();
+
+    m_commonIni->beginGroup("screen_wake");
+    auto_wake_display = m_commonIni->value("autoWakeDisplay", true).toBool();
+    prevent_sleep = m_commonIni->value("preventSleep", true).toBool();
     m_commonIni->endGroup();
 
     if (logLevelStr == "trace")

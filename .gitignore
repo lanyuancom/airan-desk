@@ -2,3 +2,5 @@ out
 build
 *.txt.user
 *.pro.user
+.idea/
+QT_INSTALL_GUIDE.md
