@@ -13,15 +13,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-windows:
     name: Build Windows (x64)
-    runs-on: windows-latest
+    runs-on: windows-2022
     
     env:
       QT_VERSION: '5.15.17'
       FFMPEG_VERSION: 'n7.1'
-      OPENSSL_VERSION: '1.1.1w'
     
     steps:
       - name: Checkout
@@ -37,38 +39,38 @@ jobs:
           path: C:/Qt
           key: qt-win-${{ env.QT_VERSION }}-x64
       
-      - name: Download Qt
+      - name: Install Python
+        if: steps.cache-qt-win.outputs.cache-hit != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Download and Install Qt
         if: steps.cache-qt-win.outputs.cache-hit != 'true'
         run: |
-          $qtUrl = "https://download.qt.io/official_releases/qt/${{ env.QT_VERSION }}/${{ env.QT_VERSION }}/qt-opensource-windows-x86_64-${{ env.QT_VERSION }}.exe"
-          curl -L -o qt-installer.exe $qtUrl
-          # Note: Qt installer requires GUI, so we use aqtinstall as alternative
           python -m pip install aqtinstall
-          aqt install-qt windows desktop ${{ env.QT_VERSION }} win64_msvc2019_64 -O C:/Qt
+          aqt install-qt windows desktop ${{ env.QT_VERSION }} win64_msvc2019_64 -O C:/Qt -m all
       
       - name: Download FFmpeg
         run: |
-          $ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/${{ env.FFMPEG_VERSION }}/ffmpeg-${{ env.FFMPEG_VERSION }}-essentials_build-win64-lgpl-shared-7.1.zip"
+          $ffmpegUrl = "https://github.com/GyanD/codexffmpeg/releases/download/${{ env.FFMPEG_VERSION }}/ffmpeg-${{ env.FFMPEG_VERSION }}-essentials_build-win64-lgpl.zip"
           curl -L -o ffmpeg.zip $ffmpegUrl
           Expand-Archive -Path ffmpeg.zip -DestinationPath C:/ffmpeg
-          echo "FFMPEG_ROOT_DIR=C:/ffmpeg/ffmpeg-${{ env.FFMPEG_VERSION }}-essentials_build-win64-lgpl-shared-7.1" >> $GITHUB_ENV
+          $ffmpegDir = Get-ChildItem -Path C:/ffmpeg -Directory | Select-Object -First 1
+          echo "FFMPEG_ROOT_DIR=C:/ffmpeg/$($ffmpegDir.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       
       - name: Download OpenSSL
         run: |
           $opensslUrl = "https://www.npcglib.org/~stathis/downloads/openssl-1.1.1w-win64.zip"
           curl -L -o openssl.zip $opensslUrl
           Expand-Archive -Path openssl.zip -DestinationPath C:/openssl
-          echo "OPENSSL_ROOT_DIR=C:/openssl/openssl-1.1.1w-win64" >> $GITHUB_ENV
+          $opensslDir = Get-ChildItem -Path C:/openssl -Directory | Select-Object -First 1
+          echo "OPENSSL_ROOT_DIR=C:/openssl/$($opensslDir.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       
       - name: Configure CMake
         run: |
           $qtRoot = "C:/Qt/${{ env.QT_VERSION }}/msvc2019_64"
-          cmake -S . -B build/win64 `
-            -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DQt5_DIR="$qtRoot/lib/cmake/Qt5" `
-            -DOPENSSL_ROOT_DIR=$env:OPENSSL_ROOT_DIR `
-            -DFFMPEG_ROOT_DIR=$env:FFMPEG_ROOT_DIR
+          cmake -S . -B build/win64 -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DQt5_DIR="$qtRoot/lib/cmake/Qt5" -DOPENSSL_ROOT_DIR="$env:OPENSSL_ROOT_DIR" -DFFMPEG_ROOT_DIR="$env:FFMPEG_ROOT_DIR"
       
       - name: Build
         run: |
@@ -77,15 +79,13 @@ jobs:
       - name: Run windeployqt
         run: |
           $qtRoot = "C:/Qt/${{ env.QT_VERSION }}/msvc2019_64"
-          & "$qtRoot/bin/windeployqt.exe" build/win64/release/airan-desk.exe --no-translations --no-system-d3d-compiler
+          & "$qtRoot/bin/windeployqt.exe" build/win64/release/airan-desk.exe --no-translations --no-system-d3d-compiler --no-opengl-sw
       
       - name: Create artifact
         run: |
           mkdir -p dist/win64
-          Copy-Item -Path "build/win64/release/*" -Destination "dist/win64" -Recurse
-          # Copy FFmpeg DLLs
+          Copy-Item -Path "build/win64/release/*" -Destination "dist/win64" -Recurse -Force
           Copy-Item -Path "$env:FFMPEG_ROOT_DIR/bin/*.dll" -Destination "dist/win64" -ErrorAction SilentlyContinue
-          # Copy OpenSSL DLLs
           Copy-Item -Path "$env:OPENSSL_ROOT_DIR/bin/*.dll" -Destination "dist/win64" -ErrorAction SilentlyContinue
       
       - name: Upload artifact
@@ -104,12 +104,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-macos:
-    name: Build macOS (Universal)
-    runs-on: macos-latest
+    name: Build macOS
+    runs-on: macos-14
     
     env:
       QT_VERSION: '5.15.17'
-      FFMPEG_VERSION: '7.1'
     
     steps:
       - name: Checkout
@@ -125,26 +124,25 @@ jobs:
           path: ~/Qt
           key: qt-mac-${{ env.QT_VERSION }}-clang
       
+      - name: Install Python
+        if: steps.cache-qt-mac.outputs.cache-hit != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
       - name: Install Qt
         if: steps.cache-qt-mac.outputs.cache-hit != 'true'
         run: |
-          brew install python@3.11
-          /opt/homebrew/bin/pip3 install aqtinstall
-          aqt install-qt mac desktop ${{ env.QT_VERSION }} clang_64 -O ~/Qt
+          python -m pip install aqtinstall
+          aqt install-qt mac desktop ${{ env.QT_VERSION }} clang_64 -O ~/Qt -m all
       
       - name: Install dependencies
         run: |
           brew install cmake openssl@3 ffmpeg@6
       
       - name: Configure CMake
-        env:
-          Qt5_DIR: ~/Qt/${{ env.QT_VERSION }}/clang_64/lib/cmake/Qt5
         run: |
-          cmake -S . -B build/macos \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH=~/Qt/${{ env.QT_VERSION }}/clang_64 \
-            -DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3 \
-            -DFFMPEG_ROOT_DIR=/opt/homebrew/opt/ffmpeg@6
+          cmake -S . -B build/macos -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=~/Qt/${{ env.QT_VERSION }}/clang_64 -DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3 -DFFMPEG_ROOT_DIR=/opt/homebrew/opt/ffmpeg@6 -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
       
       - name: Build
         run: |
@@ -158,8 +156,7 @@ jobs:
         run: |
           mkdir -p dist/macos
           cp -R build/macos/airan-desk.app dist/macos/
-          # Copy FFmpeg libs if needed
-          # cp -R /opt/homebrew/opt/ffmpeg@6/lib/*.dylib dist/macos/airan-desk.app/Contents/Frameworks/
+          cp -R /opt/homebrew/opt/ffmpeg@6/lib/*.dylib dist/macos/airan-desk.app/Contents/Frameworks/ 2>/dev/null || true
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
