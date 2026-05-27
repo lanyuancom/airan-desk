@@ -22,7 +22,7 @@ jobs:
     runs-on: windows-2022
     
     env:
-      QT_VERSION: '5.15.17'
+      QT_VERSION: '5.15.16'
       FFMPEG_VERSION: 'n7.1'
     
     steps:
@@ -108,7 +108,7 @@ jobs:
     runs-on: macos-14
     
     env:
-      QT_VERSION: '5.15.17'
+      QT_VERSION: '5.15.16'
     
     steps:
       - name: Checkout
